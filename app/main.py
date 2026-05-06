@@ -6,8 +6,10 @@ from app.dependencies import get_url_repository
 from app.repositories.interfaces import URLRepository
 from app.schemas import ShortenRequest, ShortenResponse
 from app.service import make_code
+from app.validators import ShortCodeParam
 
 app = FastAPI(title="URL Shortener", version="1.0.0")
+MAX_CODE_GENERATION_ATTEMPTS = 20
 
 
 @app.on_event("startup")
@@ -31,7 +33,8 @@ def shorten_url(
             original_url=existing.long_url,
         )
 
-    for attempt in range(20):
+    # Retry with a different deterministic seed (attempt) to handle rare code collisions.
+    for attempt in range(MAX_CODE_GENERATION_ATTEMPTS):
         code = make_code(long_url, attempt=attempt)
         taken = repository.get_by_code(code)
         if not taken:
@@ -46,10 +49,10 @@ def shorten_url(
 
 
 @app.get("/{code}")
-def redirect_short_url(code: str, repository: URLRepository = Depends(get_url_repository)):
-    if len(code) > 5:
-        raise HTTPException(status_code=404, detail="Not found")
-
+def redirect_short_url(
+    code: ShortCodeParam,
+    repository: URLRepository = Depends(get_url_repository),
+):
     record = repository.get_by_code(code)
     if not record:
         raise HTTPException(status_code=404, detail="Short URL not found")
