@@ -6,7 +6,7 @@ A simple URL shortener service built with FastAPI.
 
 - Convert long URLs to short codes (max 5 characters)
 - Redirect short URLs to original URLs
-- Persistent storage with PostgreSQL + SQLAlchemy
+- Persistent storage with PostgreSQL (Docker) / SQLite (local default) + SQLAlchemy
 - Deterministic code generation with collision handling
 - Test coverage with pytest
 
@@ -41,4 +41,5 @@ uvicorn app.main:app --reload
 - URL records are stored permanently (no delete/update flow).
 - Short code length is capped at 5.
 - SHA-256 + base62 is used for deterministic generation, with retry attempts for collisions.
-- PostgreSQL is used as the primary database; for larger scale, add caching (e.g., Redis), proper indexing, and read replicas.
+- Docker Compose runs PostgreSQL by default. Local runs fall back to SQLite unless `DATABASE_URL` is set.
+- For larger scale, add caching (e.g., Redis), proper indexing, and read replicas.
