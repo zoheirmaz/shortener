@@ -40,6 +40,6 @@ uvicorn app.main:app --reload
 
 - URL records are stored permanently (no delete/update flow).
 - Short code length is capped at 5.
-- SHA-256 + base62 is used for deterministic generation, with retry attempts for collisions.
+- A pre-generated code pool is used for allocation; codes are reserved and then marked used after URL assignment to reduce collision/race risks.
 - Docker Compose runs PostgreSQL by default. Local runs fall back to SQLite unless `DATABASE_URL` is set.
 - For larger scale, add caching (e.g., Redis), proper indexing, and read replicas.

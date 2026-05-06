@@ -1,15 +1,15 @@
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from sqlalchemy.exc import IntegrityError
 
 from app.database import init_db
 from app.dependencies import get_url_repository
 from app.repositories.interfaces import URLRepository
 from app.schemas import ShortenRequest, ShortenResponse
-from app.service import make_code
 from app.validators import ShortCodeParam
 
 app = FastAPI(title="URL Shortener", version="1.0.0")
-MAX_CODE_GENERATION_ATTEMPTS = 20
+CODE_POOL_TARGET_AVAILABLE = 1000
 
 
 @app.on_event("startup")
@@ -33,19 +33,25 @@ def shorten_url(
             original_url=existing.long_url,
         )
 
-    # Retry with a different deterministic seed (attempt) to handle rare code collisions.
-    for attempt in range(MAX_CODE_GENERATION_ATTEMPTS):
-        code = make_code(long_url, attempt=attempt)
-        taken = repository.get_by_code(code)
-        if not taken:
-            record = repository.create(code=code, long_url=long_url)
-            return ShortenResponse(
-                short_url=str(request.base_url) + record.code,
-                code=record.code,
-                original_url=record.long_url,
-            )
+    code = repository.allocate_code()
+    if not code:
+        repository.seed_code_pool(target_available=CODE_POOL_TARGET_AVAILABLE)
+        code = repository.allocate_code()
 
-    raise HTTPException(status_code=503, detail="Unable to allocate short code")
+    if not code:
+        raise HTTPException(status_code=503, detail="No available short codes")
+
+    try:
+        record = repository.create(code=code, long_url=long_url)
+    except IntegrityError:
+        repository.release_reserved_code(code)
+        raise HTTPException(status_code=409, detail="Failed to assign short code")
+
+    return ShortenResponse(
+        short_url=str(request.base_url) + record.code,
+        code=record.code,
+        original_url=record.long_url,
+    )
 
 
 @app.get("/{code}")

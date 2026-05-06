@@ -15,3 +15,15 @@ class URLRepository(ABC):
     @abstractmethod
     def create(self, code: str, long_url: str) -> URLMap:
         raise NotImplementedError
+
+    @abstractmethod
+    def allocate_code(self) -> str | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def release_reserved_code(self, code: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def seed_code_pool(self, target_available: int) -> int:
+        raise NotImplementedError

@@ -1,4 +1,5 @@
 import hashlib
+import secrets
 import string
 
 ALPHABET = string.ascii_letters + string.digits
@@ -23,3 +24,7 @@ def make_code(url: str, attempt: int = 0) -> str:
     number = int.from_bytes(digest[:8], byteorder="big")
     code = _base62_encode(number)
     return code[:MAX_CODE_LENGTH]
+
+
+def generate_random_code(length: int = MAX_CODE_LENGTH) -> str:
+    return "".join(secrets.choice(ALPHABET) for _ in range(length))
