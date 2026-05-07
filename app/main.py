@@ -3,8 +3,8 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.exc import IntegrityError
 
 from app.database import init_db
-from app.dependencies import get_url_repository
-from app.repositories.interfaces import URLRepository
+from app.dependencies import get_code_pool_repository, get_url_repository
+from app.repositories.interfaces import CodePoolRepository, URLRepository
 from app.schemas import ShortenRequest, ShortenResponse
 from app.validators import ShortCodeParam
 
@@ -21,11 +21,12 @@ def on_startup() -> None:
 def shorten_url(
     payload: ShortenRequest,
     request: Request,
-    repository: URLRepository = Depends(get_url_repository),
+    url_repository: URLRepository = Depends(get_url_repository),
+    code_pool_repository: CodePoolRepository = Depends(get_code_pool_repository),
 ):
     long_url = str(payload.url)
 
-    existing = repository.get_by_long_url(long_url)
+    existing = url_repository.get_by_long_url(long_url)
     if existing:
         return ShortenResponse(
             short_url=str(request.base_url) + existing.code,
@@ -33,18 +34,19 @@ def shorten_url(
             original_url=existing.long_url,
         )
 
-    code = repository.allocate_code()
+    code = code_pool_repository.allocate_code()
     if not code:
-        repository.seed_code_pool(target_available=CODE_POOL_TARGET_AVAILABLE)
-        code = repository.allocate_code()
+        code_pool_repository.seed_code_pool(target_available=CODE_POOL_TARGET_AVAILABLE)
+        code = code_pool_repository.allocate_code()
 
     if not code:
         raise HTTPException(status_code=503, detail="No available short codes")
 
     try:
-        record = repository.create(code=code, long_url=long_url)
+        record = url_repository.create(code=code, long_url=long_url)
+        code_pool_repository.mark_used(code)
     except IntegrityError:
-        repository.release_reserved_code(code)
+        code_pool_repository.release_reserved_code(code)
         raise HTTPException(status_code=409, detail="Failed to assign short code")
 
     return ShortenResponse(
@@ -57,9 +59,9 @@ def shorten_url(
 @app.get("/{code}")
 def redirect_short_url(
     code: ShortCodeParam,
-    repository: URLRepository = Depends(get_url_repository),
+    url_repository: URLRepository = Depends(get_url_repository),
 ):
-    record = repository.get_by_code(code)
+    record = url_repository.get_by_code(code)
     if not record:
         raise HTTPException(status_code=404, detail="Short URL not found")
 

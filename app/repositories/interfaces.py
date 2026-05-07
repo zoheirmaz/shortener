@@ -16,12 +16,18 @@ class URLRepository(ABC):
     def create(self, code: str, long_url: str) -> URLMap:
         raise NotImplementedError
 
+
+class CodePoolRepository(ABC):
     @abstractmethod
     def allocate_code(self) -> str | None:
         raise NotImplementedError
 
     @abstractmethod
     def release_reserved_code(self, code: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def mark_used(self, code: str) -> None:
         raise NotImplementedError
 
     @abstractmethod
