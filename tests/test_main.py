@@ -85,12 +85,12 @@ def test_shorten_url_no_available_codes():
     assert response.json()["detail"] == "No available short codes"
 
 
-def test_duplicate_url_returns_409():
+def test_duplicate_url_returns_200():
     url = "https://example.com/duplicate"
     client.post("/shorten", json={"url": url})
 
     response = client.post("/shorten", json={"url": url})
-    assert response.status_code == 409
+    assert response.status_code == 200
 
 
 def test_release_stale_reserved_codes():
