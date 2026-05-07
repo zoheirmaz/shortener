@@ -2,18 +2,12 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.database import init_db
 from app.dependencies import get_code_pool_repository, get_url_repository
 from app.repositories.interfaces import CodePoolRepository, URLRepository
 from app.schemas import ShortenRequest, ShortenResponse
 from app.validators import ShortCodeParam
 
 app = FastAPI(title="URL Shortener", version="1.0.0")
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    init_db()
 
 
 @app.post("/shorten", response_model=ShortenResponse)

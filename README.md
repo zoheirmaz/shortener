@@ -119,6 +119,69 @@ CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
 ```
 
+## Database Migrations
+
+This project uses **Alembic** for database schema versioning and migration management. Migrations are automatically executed at deployment time before the application starts.
+
+### How Migrations Work
+
+1. **Automatic Execution on Docker Deploy**: The `docker-compose.yml` includes a dedicated `migrations` service that runs `alembic upgrade head` before the app starts. This ensures schema changes are applied in order and without manual intervention.
+
+2. **Migration Files**: All migrations are stored in `alembic/versions/` directory with naming convention: `{revision_id}_{description}.py`
+
+3. **Initial Schema**: The initial migration (`33b713a717d4_initial_migration.py`) creates two tables:
+   - `url_map`: Stores URL mappings (code → long_url)
+   - `code_pool`: Manages short code lifecycle and reservation states
+
+### Creating a New Migration
+
+When you modify SQLAlchemy models in `app/models.py`:
+
+```bash
+# Auto-generate migration (detects model changes)
+alembic revision --autogenerate -m "description of changes"
+
+# Review the generated migration file in alembic/versions/
+# Edit if needed to ensure correctness
+
+# Apply migration locally
+alembic upgrade head
+```
+
+### Applying Migrations Locally
+
+```bash
+# Apply all pending migrations
+alembic upgrade head
+
+# Revert last migration (if needed)
+alembic downgrade -1
+
+# View migration history
+alembic history
+
+# Check current version
+alembic current
+```
+
+### Deployment Flow
+
+When you run `docker-compose up`:
+
+1. **Database starts** → health check verifies PostgreSQL is ready
+2. **Migrations run** → `migrations` service executes `alembic upgrade head` and exits
+3. **App starts** → `app` service waits for migrations to complete, then starts FastAPI
+4. **Workers start** → Celery worker and beat services start after DB is healthy
+
+This order is enforced by the `depends_on` configuration with health checks and `service_completed_successfully` conditions.
+
+### Important Notes
+
+- Migrations are **idempotent** — running them multiple times is safe
+- Always review auto-generated migrations before committing
+- Migration failures will prevent the app from starting (by design — prevents partial deployments)
+- Each migration is versioned and tracked in the `alembic_version` table
+
 ## API Endpoints
 
 ### Shorten a URL

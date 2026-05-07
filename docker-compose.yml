@@ -27,6 +27,23 @@ services:
       retries: 10
     restart: unless-stopped
 
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shortener-migrations
+    command: python -m alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+    env_file:
+      - .env.docker
+    restart: "no"
+
   app:
     build:
       context: .
@@ -37,6 +54,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     ports:
       - "8000:8000"
     volumes:
