@@ -154,12 +154,6 @@ Run the full test suite:
 pytest
 ```
 
-Run with coverage:
-
-```bash
-pytest --cov=app
-```
-
 Run specific test:
 
 ```bash
