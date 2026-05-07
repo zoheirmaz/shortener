@@ -16,6 +16,6 @@ class Base(DeclarativeBase):
 
 
 def init_db() -> None:
-    from app.models import URLMap
+    from app.models import URLMap, CodePool
 
     Base.metadata.create_all(bind=engine)
