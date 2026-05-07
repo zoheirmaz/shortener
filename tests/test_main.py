@@ -69,8 +69,9 @@ def test_redirect_short_url():
     code = create_response.json()["code"]
 
     redirect_response = client.get(f"/{code}", follow_redirects=False)
-    assert redirect_response.status_code == 307
+    assert redirect_response.status_code == 301
     assert redirect_response.headers["location"] == "https://openai.com/research"
+    assert redirect_response.headers["cache-control"] == "public, max-age=86400"
 
 
 def test_shorten_url_no_available_codes():

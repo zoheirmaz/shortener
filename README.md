@@ -262,12 +262,19 @@ pytest tests/test_main.py::test_shorten_url_returns_code -v
 
 - **Code Pool Pre-allocation**: Reduces blocking I/O during shortening requests
 - **Health Checks**: Docker services include health checks for reliability
-- **Connection Pooling**: SQLAlchemy pool settings optimized for SQLite and PostgreSQL
 - **Reserved Code Cleanup**: Periodic cleanup prevents pool exhaustion from incomplete reservations
+- **301 Permanent Redirect with Caching**: Uses HTTP 301 status code with `Cache-Control: public, max-age=86400` header
+  - **فایده**: مرورگرها و CDNها (Cloudflare، Fastly و غیره) تغییرمسیرها را برای 24 ساعت در سمت کلاینت ذخیره می‌کنند، بار سرور مبدأ را به طور چشمگیری کاهش می‌دهند
+  - **بهتری**: کد 301 نشان‌دهنده تغییرمسیر دائمی است و ذخیره‌سازی طولانی‌مدت را تشویق می‌کند. کلاینت‌ها پاسخ‌های ذخیره‌شده را بدون مراجعه به سرور مبدأ ارائه می‌دهند
+  - **کاهش بار سرور**: دسترسی‌های مکرر به همان URL کوتاه کاملاً در لبه یا مرورگر حل می‌شوند
+- **Redis Cache Layer for URL Lookups**: `get_by_code()` مقدار URL را در Redis ذخیره می‌کند (پیش‌فرض: 1 ساعت)
+  - **فایده**: درخواست‌های مکرر برای همان کد کوتاه از کش Redis خدمت می‌شوند نه از پایگاه داده
+  - **بهتری**: زمان پاسخ را کاهش می‌دهد و بار پایگاه داده را به طور قابل توجهی کاهش می‌دهد
+  - **خطای ملایم**: اگر Redis دسترس‌پذیر نباشد، سیستم به طور خودکار به پایگاه داده بازمی‌گردد
+  - **تنظیم**: TTL از طریق `CACHE_TTL_SECONDS` در محیط قابل پیکربندی است
 
 ## Future Improvements
 
-- Add caching layer (Redis) for redirects
 - Implement custom code support
 - Add click analytics tracking
 - Database indexing optimization for large datasets

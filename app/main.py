@@ -41,4 +41,8 @@ def redirect_short_url(
     if not record:
         raise HTTPException(status_code=404, detail="Short URL not found")
 
-    return RedirectResponse(url=record.long_url, status_code=307)
+    return RedirectResponse(
+        url=record.long_url,
+        status_code=301,
+        headers={"Cache-Control": "public, max-age=86400"}
+    )
