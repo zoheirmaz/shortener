@@ -23,13 +23,13 @@ class CodePoolRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def release_reserved_code(self, code: str) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
     def mark_used(self, code: str) -> None:
         raise NotImplementedError
 
     @abstractmethod
     def seed_code_pool(self, target_available: int) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def release_stale_reserved_codes(self, reserved_timeout_seconds: int) -> int:
         raise NotImplementedError

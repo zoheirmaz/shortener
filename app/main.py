@@ -9,7 +9,6 @@ from app.schemas import ShortenRequest, ShortenResponse
 from app.validators import ShortCodeParam
 
 app = FastAPI(title="URL Shortener", version="1.0.0")
-CODE_POOL_TARGET_AVAILABLE = 1000
 
 
 @app.on_event("startup")
@@ -26,19 +25,7 @@ def shorten_url(
 ):
     long_url = str(payload.url)
 
-    existing = url_repository.get_by_long_url(long_url)
-    if existing:
-        return ShortenResponse(
-            short_url=str(request.base_url) + existing.code,
-            code=existing.code,
-            original_url=existing.long_url,
-        )
-
     code = code_pool_repository.allocate_code()
-    if not code:
-        code_pool_repository.seed_code_pool(target_available=CODE_POOL_TARGET_AVAILABLE)
-        code = code_pool_repository.allocate_code()
-
     if not code:
         raise HTTPException(status_code=503, detail="No available short codes")
 
@@ -46,7 +33,6 @@ def shorten_url(
         record = url_repository.create(code=code, long_url=long_url)
         code_pool_repository.mark_used(code)
     except IntegrityError:
-        code_pool_repository.release_reserved_code(code)
         raise HTTPException(status_code=409, detail="Failed to assign short code")
 
     return ShortenResponse(

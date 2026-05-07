@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -29,15 +29,21 @@ class SQLAlchemyCodePoolRepository(CodePoolRepository):
         self._session.commit()
         return candidate.code
 
-    def release_reserved_code(self, code: str) -> None:
-        code_pool_item = self._session.scalar(select(CodePool).where(CodePool.code == code))
-        if not code_pool_item:
-            return
+    def release_stale_reserved_codes(self, reserved_timeout_seconds: int) -> int:
+        stale_reserved = self._session.query(CodePool).filter(
+            CodePool.status == "reserved",
+            CodePool.reserved_at <= datetime.now(timezone.utc) - timedelta(seconds=reserved_timeout_seconds)
+        ).all()
 
-        code_pool_item.status = "available"
-        code_pool_item.reserved_at = None
-        code_pool_item.used_at = None
-        self._session.commit()
+        for code_pool_item in stale_reserved:
+            code_pool_item.status = "available"
+            code_pool_item.reserved_at = None
+            code_pool_item.used_at = None
+
+        if stale_reserved:
+            self._session.commit()
+
+        return len(stale_reserved)
 
     def mark_used(self, code: str) -> None:
         code_pool_item = self._session.scalar(select(CodePool).where(CodePool.code == code))
