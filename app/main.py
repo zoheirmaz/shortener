@@ -1,6 +1,5 @@
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy.exc import IntegrityError
 
 from app.dependencies import get_code_pool_repository, get_url_repository
 from app.repositories.interfaces import CodePoolRepository, URLRepository
@@ -23,11 +22,8 @@ def shorten_url(
     if not code:
         raise HTTPException(status_code=503, detail="No available short codes")
 
-    try:
-        record = url_repository.create(code=code, long_url=long_url)
-        code_pool_repository.mark_used(code)
-    except IntegrityError:
-        raise HTTPException(status_code=409, detail="Failed to assign short code")
+    record = url_repository.create(code=code, long_url=long_url)
+    code_pool_repository.mark_used(code)
 
     return ShortenResponse(
         short_url=str(request.base_url) + record.code,
