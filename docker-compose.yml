@@ -48,7 +48,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fastapi-url-shortener
+    container_name: shortener-app
     depends_on:
       db:
         condition: service_healthy
