@@ -1,4 +1,14 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: shortener-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     container_name: shortener-postgres
@@ -6,6 +16,8 @@ services:
       POSTGRES_DB: shortener
       POSTGRES_USER: shortener
       POSTGRES_PASSWORD: shortener
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,7 +27,7 @@ services:
       retries: 10
     restart: unless-stopped
 
-  shortener:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -23,12 +35,48 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
     volumes:
       - ./app:/app/app
-    environment:
-      - DATABASE_URL=postgresql+psycopg://shortener:shortener@db:5432/shortener
+    env_file:
+      - .env.docker
+    restart: unless-stopped
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shortener-celery-worker
+    command: celery -A app.celery_app worker --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+    env_file:
+      - .env.docker
+    restart: unless-stopped
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shortener-celery-beat
+    command: celery -A app.celery_app beat --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+    env_file:
+      - .env.docker
     restart: unless-stopped
 
 volumes:
