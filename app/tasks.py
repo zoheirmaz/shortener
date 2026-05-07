@@ -19,7 +19,6 @@ def release_stale_reserved_codes_task() -> None:
     db = SessionLocal()
     try:
         repository = SQLAlchemyCodePoolRepository(session=db)
-        print(settings.reserved_code_timeout_seconds)
         repository.release_stale_reserved_codes(reserved_timeout_seconds=settings.reserved_code_timeout_seconds)
     finally:
         db.close()
