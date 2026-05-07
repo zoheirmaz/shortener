@@ -32,8 +32,8 @@ def upgrade() -> None:
     sa.Column('id', sa.INTEGER(), nullable=False),
     sa.Column('code', sa.VARCHAR(length=5), nullable=False),
     sa.Column('status', sa.VARCHAR(length=16), nullable=False, server_default='available'),
-    sa.Column('reserved_at', sa.DATETIME(), nullable=True),
-    sa.Column('used_at', sa.DATETIME(), nullable=True),
+    sa.Column('reserved_at', sa.TIMESTAMP(), nullable=True),
+    sa.Column('used_at', sa.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_code_pool_status'), 'code_pool', ['status'], unique=False)
