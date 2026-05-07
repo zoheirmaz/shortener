@@ -1,14 +1,12 @@
-import os
 from celery import Celery
 from celery.schedules import crontab
 
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+from app.config import settings
 
 celery_app = Celery(
     "url_shortener",
-    broker=CELERY_BROKER_URL,
-    backend=CELERY_RESULT_BACKEND,
+    broker=settings.celery_broker_url,
+    backend=settings.celery_result_backend,
 )
 
 celery_app.conf.update(
