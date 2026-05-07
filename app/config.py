@@ -15,8 +15,12 @@ class Settings(BaseSettings):
     code_pool_target_available: int = 1000
     reserved_code_timeout_seconds: int = 300
 
+    cache_ttl_seconds: int = 3600
+
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/0"
+
+    redis_cache_url: str = "redis://localhost:6379/1"
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
