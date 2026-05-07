@@ -48,7 +48,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: shortener-app
     depends_on:
       db:
         condition: service_healthy
@@ -56,12 +55,23 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
-    ports:
-      - "8000:8000"
     volumes:
       - ./app:/app/app
     env_file:
       - .env.docker
+    restart: unless-stopped
+    deploy:
+      replicas: 4
+
+  nginx:
+    image: nginx:alpine
+    container_name: shortener-nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
     restart: unless-stopped
 
   celery_worker:
