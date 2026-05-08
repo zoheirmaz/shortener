@@ -26,7 +26,7 @@ def shorten_url(
     code_pool_repository.mark_used(code)
 
     return ShortenResponse(
-        short_url=str(request.base_url) + record.code,
+        short_url=f'/{record.code}',
         code=record.code,
         original_url=record.long_url,
     )
