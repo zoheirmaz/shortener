@@ -1,0 +1,10 @@
+__pycache__/
+/.idea
+/.claude
+*.pyc
+./venv
+./.idea
+
+*shortener.db
+.env
+.env.docker
